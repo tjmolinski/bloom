@@ -1,0 +1,99 @@
+package com.tjmolinski.bloom;
+
+import java.io.File;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Bundle;
+import android.os.Environment;
+import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+
+public class BloomPreview extends BaseActivity {
+
+	AnimationDrawable animation;
+	private Bloom mBloom;
+	private final int FRAME_DURATION = 600;
+	private final int MAX_FRAME_DURATION = 9000;
+	private ImageView bloomPreview;
+	private SeekBar fpsBar;
+
+	@SuppressWarnings("deprecation")
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_preview);
+
+		mBloom = getIntent().getExtras().getParcelable("BLOOM");
+
+		animation = new AnimationDrawable();
+		bloomPreview = (ImageView) findViewById(R.id.bloom_preview);
+		fpsBar = (SeekBar) findViewById(R.id.fps_bar);
+		fpsBar.setMax(MAX_FRAME_DURATION);
+		fpsBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+			}
+			
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+			}
+			
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+				stopPreview();
+				animation = Utilities.resampleAnimation(animation, MAX_FRAME_DURATION-progress);
+				startPreview();
+			}
+		});
+
+		File[] root = Environment.getExternalStoragePublicDirectory(
+				Environment.DIRECTORY_PICTURES + "/" + mBloom.getTitle())
+				.listFiles();
+
+		// Have to traverse backwards due to timestamping
+		// making the newest picture the first picture to
+		// be animated
+		for (int i = root.length - 1; i >= 0; i--) {
+			Bitmap bMap = BitmapFactory.decodeFile(root[i].getAbsolutePath());
+			BitmapDrawable bmp = new BitmapDrawable(getResources(), bMap);
+			bMap = Utilities.flip(bmp).getBitmap();
+			animation.addFrame(new BitmapDrawable(getResources(), bMap), FRAME_DURATION);
+		}
+
+		animation.setOneShot(false);
+
+		bloomPreview.setBackgroundDrawable(animation);
+		startPreview();
+	}
+	
+	@Override
+	public void onBackPressed() {
+		super.onBackPressed();
+		Intent intent = new Intent(BloomPreview.this, BloomCamera.class);
+		intent.putExtra("BLOOM", mBloom);
+		startActivity(intent);
+	}
+	
+	private void startPreview() {// run the start() method later on the UI thread
+		bloomPreview.post(new Runnable() {
+			@Override
+			public void run() {
+				animation.start();
+			}
+		});
+	}
+	
+	private void stopPreview() {// run the start() method later on the UI thread
+		bloomPreview.post(new Runnable() {
+			@Override
+			public void run() {
+				animation.stop();
+			}
+		});
+	}
+}

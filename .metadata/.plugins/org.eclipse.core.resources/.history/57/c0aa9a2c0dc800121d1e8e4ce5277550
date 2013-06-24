@@ -1,0 +1,38 @@
+package com.tjmolinski.bloom;
+
+import java.util.Calendar;
+
+import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+
+public class BloomCreation extends BaseActivity {
+	
+	EditText bloomName;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_creation);
+		
+		bloomName = (EditText)findViewById(R.id.bloom_name);
+	}
+
+	public void onClickStartBloom(View v) {
+		if(isFormComplete()) {
+			Bloom newBloom = new Bloom(Utilities.getEditTextString(bloomName), "");
+			Intent intent = new Intent(BloomCreation.this, BloomCamera.class);
+			intent.putExtra("BLOOM", newBloom);
+			startActivity(intent);
+			finish();
+		}
+	}
+	
+	private boolean isFormComplete() {
+		return Utilities.getEditTextString(bloomName).length() > 0;
+	}
+}

@@ -1,0 +1,108 @@
+package com.tjmolinski.bloom;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class BloomList extends BaseActivity {
+	private Activity mActivity;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_list);
+
+		mActivity = this;
+		final ListView listview = (ListView) findViewById(R.id.bloom_list);
+
+		final ArrayList<Bloom> list = Utilities.getLocalBlooms();
+		// get the bloom
+		final BloomArrayAdapter adapter = new BloomArrayAdapter(this, list);
+		listview.setAdapter(adapter);
+		listview.setLongClickable(true);
+		listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, final View view,	int position, long id) {
+				Bloom selectedBloom = (Bloom) parent.getItemAtPosition(position);
+				Intent intent = new Intent(BloomList.this, BloomCamera.class);
+				intent.putExtra("BLOOM", selectedBloom);
+				startActivity(intent);
+			}
+
+		});
+		listview.setOnItemLongClickListener(new OnItemLongClickListener() {
+			@Override
+			public boolean onItemLongClick(final AdapterView<?> arg0, View arg1, final int arg2, long arg3) {
+				new AlertDialog.Builder(mActivity)
+					.setMessage("Are you sure you want to delete this bloom")
+					.setPositiveButton("Yes", new OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							Runnable run = new Runnable() {
+								
+								@Override
+								public void run() {
+									File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).listFiles()[arg2];
+									for(int i = 0; i < dir.listFiles().length; i++) {
+										dir.listFiles()[i].delete();
+									}
+									dir.delete();
+									adapter.remove((Bloom)arg0.getItemAtPosition(arg2));
+									adapter.notifyDataSetChanged();
+								}
+							};
+							mActivity.runOnUiThread(run);
+						}
+					})
+					.setNegativeButton("No", new OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							dialog.dismiss();
+						}
+					}).create().show();
+				return false;
+			}
+		});
+	}
+
+	private class BloomArrayAdapter extends ArrayAdapter<Bloom> {
+
+		private final Context context;
+		private final ArrayList<Bloom> values;
+
+		public BloomArrayAdapter(Context context, ArrayList<Bloom> list) {
+			super(context, R.layout.bloom_list_item, list);
+			this.context = context;
+			this.values = list;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			View rowView = inflater.inflate(R.layout.bloom_list_item, parent, false);
+			TextView textView = (TextView) rowView.findViewById(R.id.bloom_description);
+			ImageView imageView = (ImageView) rowView.findViewById(R.id.bloom_thumbnail);
+			textView.setText(values.get(position).getTitle());
+
+			return rowView;
+		}
+	}
+}

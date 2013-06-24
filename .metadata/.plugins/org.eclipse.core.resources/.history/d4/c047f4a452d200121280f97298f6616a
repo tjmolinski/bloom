@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:gravity="center"
+    android:orientation="vertical" >
+    
+    <TextView
+        android:layout_width="200dip"
+        android:layout_height="wrap_content"
+        android:text="@string/bloom_name"/>
+    <EditText 
+        android:id="@+id/bloom_name"
+        android:layout_width="200dip"
+        android:layout_height="wrap_content"
+        android:hint="@string/bloom_name"/>
+    
+    <LinearLayout 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        
+	    <CheckBox
+	        android:id="@+id/alarm_sunday"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:textSelectHandleRight="Su"/>
+        
+	    <CheckBox
+	        android:id="@+id/alarm_monday" 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:text="M"/>
+        
+	    <CheckBox
+	        android:id="@+id/alarm_tuesday"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:text="T"/>
+        
+	    <CheckBox
+	        android:id="@+id/alarm_wednesday"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:text="W"/>
+        
+	    <CheckBox
+	        android:id="@+id/alarm_thursday"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:text="Th"/>
+        
+	    <CheckBox
+	        android:id="@+id/alarm_friday"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:text="F"/>
+        
+	    <CheckBox
+	        android:id="@+id/alarm_saturday"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingLeft="10dip"
+	        android:paddingRight="10dip"
+	        android:text="S"/>
+    
+    </LinearLayout>
+    
+    <TimePicker
+        android:id="@+id/scheduleTimePicker"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" />
+    
+    <Button
+        android:layout_width="200dip"
+        android:layout_height="wrap_content"
+        android:text="@string/start_bloom"
+        android:onClick="onClickStartBloom"/>
+
+</LinearLayout>

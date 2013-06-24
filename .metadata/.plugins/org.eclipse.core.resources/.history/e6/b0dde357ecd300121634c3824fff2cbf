@@ -1,0 +1,27 @@
+package com.tjmolinski.bloom.util;
+
+public enum Day{
+	SUNDAY(0, 0x1),
+	MONDAY(1, 0x2),
+	TUESDAY(2, 0x4),
+	WEDNESDAY(3, 0x8),
+	THURSDAY(4, 0x10),
+	FRIDAY(5, 0x20),
+	SATURDAY(6, 0x40);
+	
+	private int mId;
+	private int mFlag;
+	
+	Day(int id, int flag) {
+		mId = id;
+		mFlag = flag;
+	}
+	
+	public int getId() {
+		return mId;
+	}
+	
+	public int getFlag() {
+		return mFlag;
+	}
+}

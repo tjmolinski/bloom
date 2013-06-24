@@ -1,0 +1,280 @@
+package com.tjmolinski.bloom;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.hardware.Camera;
+import android.hardware.Camera.PictureCallback;
+import android.media.ExifInterface;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
+public class BloomCamera extends BaseActivity {
+
+	private static final int ONION_SKIN_ALPHA = 158;
+	private Camera mCamera;
+	private CameraPreview mPreview;
+	private ImageView mOnionSkin;
+	private Bloom mBloom;
+	private final String TAG = "BLOOM_CAMERA";
+	private Integer selectedCamera;
+	private boolean bTakingPicture = false;
+	private Activity mActivity;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_camera);
+		mActivity = this;
+		mBloom = getIntent().getExtras().getParcelable("BLOOM");
+
+		// if (!checkCameraHardware(this)) {
+		// Toast.makeText(this, "No cameras detected",
+		// Toast.LENGTH_LONG).show();
+		// return;
+		// }
+
+		Button captureButton = (Button) findViewById(R.id.button_capture);
+		captureButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (bTakingPicture)
+					return;
+
+				// get an image from the camera
+				new TakePictureTask().execute();
+				bTakingPicture = true;
+			}
+		});
+
+		Button previewButton = (Button) findViewById(R.id.button_preview);
+		previewButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// get an image from the camera
+				Intent intent = new Intent(BloomCamera.this, BloomPreview.class);
+				intent.putExtra("BLOOM", mBloom);
+				startActivity(intent);
+				finish();
+			}
+		});
+
+		Button flipCameraButton = (Button) findViewById(R.id.button_flip_camera);
+		if (Camera.getNumberOfCameras() > 1) {
+			flipCameraButton.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					selectedCamera = (selectedCamera - 1 < 0 ? Camera
+							.getNumberOfCameras() - 1 : selectedCamera - 1);
+					releaseCamera();
+					getCamera();
+				}
+			});
+		} else {
+			flipCameraButton.setVisibility(View.GONE);
+		}
+
+		getCamera();
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		if (mCamera == null) {
+			mCamera = getCameraInstance();
+		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		releaseCamera();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		releaseCamera();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		if (mCamera == null) {
+			mCamera = getCameraInstance();
+		}
+	}
+
+	public void getCamera() {
+		// Create an instance of Camera
+		mCamera = getCameraInstance();
+
+		if (mCamera != null) {
+			// Create our Preview view and set it as the content of our
+			// activity.
+			mPreview = new CameraPreview(this, mCamera);
+			mOnionSkin = new ImageView(this);
+			LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+					LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+			mOnionSkin.setLayoutParams(layoutParams);
+
+			updateOnionSkin();
+			FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+			preview.addView(mPreview);
+			preview.addView(mOnionSkin);
+		}
+	}
+
+	private void releaseCamera() {
+		if (mCamera != null) {
+			mCamera.release(); // release the camera for other applications
+			mCamera = null;
+		}
+	}
+
+	public Camera getCameraInstance() {
+		Camera c = null;
+		try {
+			// Default to the front camera
+			if (selectedCamera == null) {
+				selectedCamera = Camera.getNumberOfCameras() - 1;
+			}
+			c = Camera.open(selectedCamera);
+		} catch (Exception e) {
+			Toast.makeText(this, "Can't open camera", Toast.LENGTH_LONG).show();
+			// Camera is not available (in use or does not exist)
+		}
+		return c; // returns null if camera is unavailable
+	}
+
+	private PictureCallback mPicture = new PictureCallback() {
+
+		@Override
+		public void onPictureTaken(final byte[] data, Camera camera) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			new AlertDialog.Builder(mActivity)
+			.setMessage("Would you like to retake the picture?")
+			.setNegativeButton("Yes", new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.dismiss();
+				}
+			})
+			.setPositiveButton("No", new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					savePicture(data);
+				}
+			}).create().show();
+		}
+	};
+
+	@SuppressWarnings("deprecation")
+	private void updateOnionSkin() {
+		int size = Environment.getExternalStoragePublicDirectory(
+				Environment.DIRECTORY_PICTURES + "/" + mBloom.getTitle())
+				.listFiles().length;
+
+		if (size > 0) {
+			File root = Environment.getExternalStoragePublicDirectory(
+					Environment.DIRECTORY_PICTURES + "/" + mBloom.getTitle())
+					.listFiles()[size - 1];
+			Bitmap bMap = BitmapFactory.decodeFile(root.getAbsolutePath());
+			BitmapDrawable bmp = new BitmapDrawable(getResources(), bMap);
+			bMap = Utilities.flip(bmp).getBitmap();
+			mOnionSkin.setImageBitmap(bMap);
+		} else {
+			// TODO: Think of something else here
+			mOnionSkin.setImageDrawable(getResources().getDrawable(
+					R.drawable.ic_launcher));
+		}
+
+		mOnionSkin.setScaleType(ScaleType.FIT_XY);
+		mOnionSkin.setAlpha(ONION_SKIN_ALPHA);
+	}
+
+	private class TakePictureTask extends AsyncTask<Void, Void, Void> {
+		@Override
+		protected void onPostExecute(Void result) {
+			mCamera.startPreview();
+			updateOnionSkin();
+			bTakingPicture = false;
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			mCamera.takePicture(null, null, mPicture);
+
+			return null;
+		}
+	}
+
+	private void savePicture(byte[] data) {
+		try {
+			File pictureFile = Utilities.getOutputMediaFile(
+					mBloom.getFolderDestination(), Utilities.MEDIA_TYPE_IMAGE);
+
+			if (pictureFile == null) {
+				Log.d(TAG,
+						"Error creating media file, check storage permissions");
+				return;
+			}
+
+			FileOutputStream fos = new FileOutputStream(pictureFile);
+
+			Bitmap realImage = BitmapFactory.decodeByteArray(data, 0,
+					data.length);
+
+			ExifInterface exif = new ExifInterface(pictureFile.toString());
+
+			Log.d(TAG, exif.getAttribute(ExifInterface.TAG_ORIENTATION));
+			if (exif.getAttribute(ExifInterface.TAG_ORIENTATION)
+					.equalsIgnoreCase("6")) {
+				realImage = Utilities.rotate(realImage, 90);
+			} else if (exif.getAttribute(ExifInterface.TAG_ORIENTATION)
+					.equalsIgnoreCase("8")) {
+				realImage = Utilities.rotate(realImage, 270);
+			} else if (exif.getAttribute(ExifInterface.TAG_ORIENTATION)
+					.equalsIgnoreCase("3")) {
+				realImage = Utilities.rotate(realImage, 180);
+			} else if (exif.getAttribute(ExifInterface.TAG_ORIENTATION)
+					.equalsIgnoreCase("0")) {
+				realImage = Utilities.rotate(realImage, 270);
+			}
+
+			realImage.compress(Bitmap.CompressFormat.PNG, 100, fos);
+			fos.close();
+			fos.write(data);
+			fos.close();
+		} catch (FileNotFoundException e) {
+			Log.d(TAG, "File not found: " + e.getMessage());
+		} catch (IOException e) {
+			Log.d(TAG, "Error accessing file: " + e.getMessage());
+		}
+	}
+}

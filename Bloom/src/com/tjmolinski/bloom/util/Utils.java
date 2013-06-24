@@ -1,0 +1,198 @@
+/*
+f * Copyright (C) 2012 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.tjmolinski.bloom.util;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+
+import android.annotation.TargetApi;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
+import android.os.Environment;
+import android.os.StrictMode;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.widget.EditText;
+
+import com.tjmolinski.bloom.Bloom;
+
+/**
+ * Class containing some static utility methods.
+ */
+public class Utils {
+    private Utils() {};
+	public static final int MEDIA_TYPE_IMAGE = 1;
+	public static final int MEDIA_TYPE_VIDEO = 2;
+	private final static String TAG = "UTILITIES";
+	private static ArrayList<Bloom> localBlooms;
+	
+	public static Day getDayFromId(int id) {
+		switch(id) {
+		case 0:
+			return Day.SUNDAY;
+		case 1:
+			return Day.MONDAY;
+		case 2:
+			return Day.TUESDAY;
+		case 3:
+			return Day.WEDNESDAY;
+		case 4:
+			return Day.THURSDAY;
+		case 5:
+			return Day.FRIDAY;
+		case 6:
+			return Day.SATURDAY;
+		}
+		return null;
+	}
+	
+	public static ArrayList<Bloom> getLocalBlooms() {
+		localBlooms = new ArrayList<Bloom>();
+		
+		File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+		String[] bloomDirectories = directory.list();
+
+		if(bloomDirectories != null) {
+			for(int i = 0; i < bloomDirectories.length; i++) {
+				localBlooms.add(new Bloom(bloomDirectories[i], new File(directory, bloomDirectories[i])));
+			}
+		}
+		
+		return localBlooms;
+	}
+	
+	public static boolean isDayFlagSet(int day, int flag) {
+		return (day & flag) == flag;
+	}
+	
+	@SuppressWarnings("deprecation")
+	public static BitmapDrawable flip(BitmapDrawable d) {
+		Matrix m = new Matrix();
+		m.preScale(-1, 1);
+		Bitmap src = d.getBitmap();
+		Bitmap dst = Bitmap.createBitmap(src, 0, 0, src.getWidth(),
+				src.getHeight(), m, false);
+		dst.setDensity(DisplayMetrics.DENSITY_DEFAULT);
+		return new BitmapDrawable(dst);
+	}
+	
+	public static Bitmap rotate(Bitmap bitmap, int degree) {
+		int w = bitmap.getWidth();
+		int h = bitmap.getHeight();
+
+		Matrix mtx = new Matrix();
+		mtx.postRotate(degree);
+
+		return Bitmap.createBitmap(bitmap, 0, 0, w, h, mtx, true);
+	}
+	
+	public static File createDirectory(String name) {
+		File mediaStorageDir = new File(
+				Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+				name);
+		if (!mediaStorageDir.exists()) {
+			if (!mediaStorageDir.mkdirs()) {
+				Log.d(TAG, "failed to create directory");
+				return null;
+			}
+		}
+		
+		return mediaStorageDir;
+	}
+
+	public static File getOutputMediaFile(File directory, int type) {
+		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+				.format(new Date());
+		File mediaFile;
+		if (type == MEDIA_TYPE_IMAGE) {
+			mediaFile = new File(directory.getPath() + File.separator
+					+ "IMG_" + timeStamp + ".jpg");
+		} else {
+			return null;
+		}
+
+		return mediaFile;
+	}
+	
+	public static String getEditTextString(EditText et) {
+		return et.getText().toString().trim();
+	}
+
+
+	public static AnimationDrawable resampleAnimation(AnimationDrawable input,	int frameDuration) {
+		AnimationDrawable output = new AnimationDrawable();
+
+		for (int i = 0; i < input.getNumberOfFrames(); i++) {
+			output.addFrame(input.getFrame(i), frameDuration);
+		}
+
+		output.setOneShot(input.isOneShot());
+		
+		return output;
+	}
+
+    @TargetApi(11)
+    public static void enableStrictMode() {
+        if (Utils.hasGingerbread()) {
+            StrictMode.ThreadPolicy.Builder threadPolicyBuilder =
+                    new StrictMode.ThreadPolicy.Builder()
+                            .detectAll()
+                            .penaltyLog();
+            StrictMode.VmPolicy.Builder vmPolicyBuilder =
+                    new StrictMode.VmPolicy.Builder()
+                            .detectAll()
+                            .penaltyLog();
+
+//            if (Utils.hasHoneycomb()) {
+//                threadPolicyBuilder.penaltyFlashScreen();
+//                vmPolicyBuilder
+//                        .setClassInstanceLimit(ImageGridActivity.class, 1)
+//                        .setClassInstanceLimit(ImageDetailActivity.class, 1);
+//            }
+            StrictMode.setThreadPolicy(threadPolicyBuilder.build());
+            StrictMode.setVmPolicy(vmPolicyBuilder.build());
+        }
+    }
+
+    public static boolean hasFroyo() {
+        // Can use static final constants like FROYO, declared in later versions
+        // of the OS since they are inlined at compile time. This is guaranteed behavior.
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO;
+    }
+
+    public static boolean hasGingerbread() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD;
+    }
+
+    public static boolean hasHoneycomb() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB;
+    }
+
+    public static boolean hasHoneycombMR1() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1;
+    }
+
+    public static boolean hasJellyBean() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
+    }
+}

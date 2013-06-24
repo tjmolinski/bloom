@@ -1,0 +1,8 @@
+INDEX VERSION 1.126+/Users/tedmolinski/bloom/.metadata/.plugins/org.eclipse.jdt.core
+2171860002.index
+854980679.index
+1628266423.index
+3434863015.index
+3681902345.index
+2249634626.index
+996367488.index

@@ -1,0 +1,88 @@
+package com.tjmolinski.bloom;
+
+import java.util.Calendar;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TimePicker;
+
+import com.tjmolinski.bloom.util.Day;
+import com.tjmolinski.bloom.util.Utils;
+
+public class BloomCreation extends BaseActivity {
+
+	private EditText bloomName;
+	private ScheduleClient scheduleClient;
+	private TimePicker picker;
+	private CheckBox[] boxes = new CheckBox[7];
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_creation);
+
+		scheduleClient = new ScheduleClient(this);
+		scheduleClient.doBindService();
+
+		picker = (TimePicker) findViewById(R.id.scheduleTimePicker);
+		bloomName = (EditText) findViewById(R.id.bloom_name);
+		boxes[Day.SUNDAY.getId()] = (CheckBox) findViewById(R.id.alarm_sunday);
+		boxes[Day.MONDAY.getId()] = (CheckBox) findViewById(R.id.alarm_monday);
+		boxes[Day.TUESDAY.getId()] = (CheckBox) findViewById(R.id.alarm_tuesday);
+		boxes[Day.WEDNESDAY.getId()] = (CheckBox) findViewById(R.id.alarm_wednesday);
+		boxes[Day.THURSDAY.getId()] = (CheckBox) findViewById(R.id.alarm_thursday);
+		boxes[Day.FRIDAY.getId()] = (CheckBox) findViewById(R.id.alarm_friday);
+		boxes[Day.SATURDAY.getId()] = (CheckBox) findViewById(R.id.alarm_saturday);
+	}
+
+	public void onClickStartBloom(View v) {
+		if (isFormComplete()) {
+			Bloom newBloom = new Bloom(Utils.getEditTextString(bloomName), "");
+			setReminder(newBloom);
+			
+			Intent intent = new Intent(BloomCreation.this, BloomCamera.class);
+			intent.putExtra("BLOOM", newBloom);
+			startActivity(intent);
+			finish();
+		}
+	}
+
+	private boolean isFormComplete() {
+		return Utils.getEditTextString(bloomName).length() > 0;
+	}
+
+	public void setReminder(Bloom bloom) {
+		// Create a new calendar set to the date chosen
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.HOUR_OF_DAY, picker.getCurrentHour());
+		c.set(Calendar.MINUTE, picker.getCurrentMinute());
+		c.set(Calendar.SECOND, 0);
+		
+		// Ask our service to set an alarm for that date, this activity talks to
+		// the client that talks to the service
+		int days = 0x0;
+		
+		days |= boxes[Day.SUNDAY.getId()].isChecked() ? Day.SUNDAY.getFlag() : 0x0;
+		days |= boxes[Day.MONDAY.getId()].isChecked() ? Day.MONDAY.getFlag() : 0x0;
+		days |= boxes[Day.TUESDAY.getId()].isChecked() ? Day.TUESDAY.getFlag() : 0x0;
+		days |= boxes[Day.WEDNESDAY.getId()].isChecked() ? Day.WEDNESDAY.getFlag() : 0x0;
+		days |= boxes[Day.THURSDAY.getId()].isChecked() ? Day.THURSDAY.getFlag() : 0x0;
+		days |= boxes[Day.FRIDAY.getId()].isChecked() ? Day.FRIDAY.getFlag() : 0x0;
+		days |= boxes[Day.SATURDAY.getId()].isChecked() ? Day.SATURDAY.getFlag() : 0x0;
+		
+		scheduleClient.setAlarmForNotification(c, days, bloom);
+	}
+
+	@Override
+	protected void onStop() {
+		// When our activity is stopped ensure we also stop the connection to
+		// the service
+		// this stops us leaking our activity into the system *bad*
+		if (scheduleClient != null)
+			scheduleClient.doUnbindService();
+		super.onStop();
+	}
+}

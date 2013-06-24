@@ -1,0 +1,97 @@
+package com.tjmolinski.bloom;
+
+import java.util.Calendar;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TimePicker;
+
+import com.tjmolinski.bloom.util.Utils;
+
+public class BloomCreation extends BaseActivity {
+
+	private EditText bloomName;
+	private ScheduleClient scheduleClient;
+	private TimePicker picker;
+	private CheckBox[] boxes = new CheckBox[7];
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_creation);
+
+		scheduleClient = new ScheduleClient(this);
+		scheduleClient.doBindService();
+
+		picker = (TimePicker) findViewById(R.id.scheduleTimePicker);
+		bloomName = (EditText) findViewById(R.id.bloom_name);
+		boxes[Utils.SUNDAY] = (CheckBox) findViewById(R.id.alarm_sunday);
+		boxes[Utils.MONDAY] = (CheckBox) findViewById(R.id.alarm_monday);
+		boxes[Utils.TUESDAY] = (CheckBox) findViewById(R.id.alarm_tuesday);
+		boxes[Utils.WEDNESDAY] = (CheckBox) findViewById(R.id.alarm_wednesday);
+		boxes[Utils.THURSDAY] = (CheckBox) findViewById(R.id.alarm_thursday);
+		boxes[Utils.FRIDAY] = (CheckBox) findViewById(R.id.alarm_friday);
+		boxes[Utils.SATURDAY] = (CheckBox) findViewById(R.id.alarm_saturday);
+	}
+
+	public void onClickStartBloom(View v) {
+		if (isFormComplete()) {
+			Bloom newBloom = new Bloom(Utils.getEditTextString(bloomName), "");
+			Intent intent = new Intent(BloomCreation.this, BloomCamera.class);
+			intent.putExtra("BLOOM", newBloom);
+			startActivity(intent);
+			finish();
+		}
+	}
+
+	private boolean isFormComplete() {
+		return Utils.getEditTextString(bloomName).length() > 0;
+	}
+
+	public void onDateSelectedButtonClick(View v) {
+		// Create a new calendar set to the date chosen
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.HOUR_OF_DAY, picker.getCurrentHour());
+		c.set(Calendar.MINUTE, picker.getCurrentMinute());
+		c.set(Calendar.SECOND, 0);
+		
+		// Ask our service to set an alarm for that date, this activity talks to
+		// the client that talks to the service
+		byte days = 0x00;
+		if(boxes[0].isChecked()) {
+			days |= 0x1;
+		}
+		if(boxes[1].isChecked()) {
+			days |= 0x2;
+		}
+		if(boxes[2].isChecked()) {
+			days |= 0x3;
+		}
+		if(boxes[3].isChecked()) {
+			days |= 0x4;
+		}
+		if(boxes[4].isChecked()) {
+			days |= 0x5;
+		}
+		if(boxes[5].isChecked()) {
+			days |= 0x6;
+		}
+		if(boxes[6].isChecked()) {
+			days |= 0x7;
+		}
+		scheduleClient.setAlarmForNotification(c, days);
+	}
+
+	@Override
+	protected void onStop() {
+		// When our activity is stopped ensure we also stop the connection to
+		// the service
+		// this stops us leaking our activity into the system *bad*
+		if (scheduleClient != null)
+			scheduleClient.doUnbindService();
+		super.onStop();
+	}
+}

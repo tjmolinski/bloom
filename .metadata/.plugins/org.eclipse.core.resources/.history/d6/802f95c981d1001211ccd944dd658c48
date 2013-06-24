@@ -1,0 +1,78 @@
+package com.tjmolinski.bloom;
+
+import java.util.Calendar;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.DatePicker;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import com.tjmolinski.bloom.util.Utils;
+
+public class BloomCreation extends BaseActivity {
+
+	private EditText bloomName;
+	private ScheduleClient scheduleClient;
+	private TimePicker picker;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.bloom_creation);
+
+		scheduleClient = new ScheduleClient(this);
+		scheduleClient.doBindService();
+
+		picker = (TimePicker) findViewById(R.id.scheduleTimePicker);
+		bloomName = (EditText) findViewById(R.id.bloom_name);
+	}
+
+	public void onClickStartBloom(View v) {
+		if (isFormComplete()) {
+			Bloom newBloom = new Bloom(Utils.getEditTextString(bloomName), "");
+			Intent intent = new Intent(BloomCreation.this, BloomCamera.class);
+			intent.putExtra("BLOOM", newBloom);
+			startActivity(intent);
+			finish();
+		}
+	}
+
+	private boolean isFormComplete() {
+		return Utils.getEditTextString(bloomName).length() > 0;
+	}
+
+	public void onDateSelectedButtonClick(View v) {
+		//TODO: GET THIS TO WORK ON CERTAIN DAYS AND TIMES
+		// Get the date from our datepicker
+//		int day = picker.getDayOfMonth();
+//		int month = picker.getMonth();
+//		int year = picker.getYear();
+		// Create a new calendar set to the date chosen
+		// we set the time to midnight (i.e. the first minute of that day)
+		Calendar c = Calendar.getInstance();
+//		c.set(year, month, day);
+		c.set(Calendar.HOUR_OF_DAY, 0);
+		c.set(Calendar.MINUTE, 0);
+		c.set(Calendar.SECOND, 0);
+		// Ask our service to set an alarm for that date, this activity talks to
+		// the client that talks to the service
+		scheduleClient.setAlarmForNotification(c);
+		// Notify the user what they just did
+		Toast.makeText(
+				this,
+				"Notification set for: " + day + "/" + (month + 1) + "/" + year,
+				Toast.LENGTH_SHORT).show();
+	}
+
+	@Override
+	protected void onStop() {
+		// When our activity is stopped ensure we also stop the connection to
+		// the service
+		// this stops us leaking our activity into the system *bad*
+		if (scheduleClient != null)
+			scheduleClient.doUnbindService();
+		super.onStop();
+	}
+}

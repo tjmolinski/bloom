@@ -1,0 +1,66 @@
+package com.tjmolinski.bloom;
+
+import java.io.File;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Bloom implements Parcelable {
+	
+	private final String TAG = "BLOOM";
+	private String mTitle;
+	private String mDescription;
+	private File mFolder;
+	
+	public Bloom(String newTitle, String newDescription) {
+		mTitle = newTitle;
+		mDescription = newDescription;
+		
+		mFolder = Utilities.createDirectory(mTitle);
+	}
+	
+	public Bloom(String title, File directory) {
+		mTitle = title;
+		mFolder = directory;
+	}
+	
+	public Bloom(Parcel p) {
+		mTitle = p.readString();
+		mDescription = p.readString();
+		mFolder = (File) p.readSerializable();
+	}
+	
+	public String getTitle() {
+		return mTitle;
+	}
+	
+	public String getDescription() {
+		return mDescription;
+	}
+	
+	public File getFolderDestination() {
+		return mFolder;
+	}
+
+	@Override
+	public int describeContents() {
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		dest.writeString(mTitle);
+		dest.writeString(mDescription);
+		dest.writeSerializable(mFolder);
+	} 
+	
+	public static Creator<Bloom> CREATOR = new Creator<Bloom>() {
+        public Bloom createFromParcel(Parcel parcel) {
+            return new Bloom(parcel);
+        }
+
+        public Bloom[] newArray(int size) {
+            return new Bloom[size];
+        }
+    };
+}

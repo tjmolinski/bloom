@@ -1,0 +1,11 @@
+package com.tjmolinski.bloom;
+
+public class RebootReceiver extends BroadcastReceiver {
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+       Intent serviceIntent = new Intent(context, MeCorpServiceClass.class);
+       serviceIntent.putExtra("caller", "RebootReceiver");
+       context.startService(serviceIntent);
+    }
+}

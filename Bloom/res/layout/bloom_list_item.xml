@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" 
+    android:weightSum="1"
+    android:gravity="center"
+    android:background="#CCCCCC"
+    android:layout_margin="5dip">
+    
+    <ImageView 
+        android:id="@+id/bloom_thumbnail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.25"
+        android:src="@drawable/ic_launcher"
+        android:contentDescription="@string/bloom_preview"
+        android:layout_gravity="center"/>
+    
+    <TextView 
+        android:id="@+id/bloom_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.7"
+        android:textIsSelectable="false"
+        android:layout_gravity="center"/>
+    
+    <ImageView
+        android:id="@+id/bloom_grid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.05"
+        android:onClick="onBloomGridClick"
+        android:src="@drawable/folder_icon"
+        android:contentDescription="@string/bloom_grid"
+        android:layout_gravity="center"/>
+    
+
+</LinearLayout>

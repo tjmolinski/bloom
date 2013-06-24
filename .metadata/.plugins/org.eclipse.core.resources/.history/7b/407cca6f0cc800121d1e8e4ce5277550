@@ -1,0 +1,104 @@
+package com.tjmolinski.bloom;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Environment;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.widget.EditText;
+
+public class Utilities {
+
+	public static final int MEDIA_TYPE_IMAGE = 1;
+	public static final int MEDIA_TYPE_VIDEO = 2;
+	private final static String TAG = "UTILITIES";
+	private static ArrayList<Bloom> localBlooms;
+	
+	public static ArrayList<Bloom> getLocalBlooms() {
+		localBlooms = new ArrayList<Bloom>();
+		
+		File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+		String[] bloomDirectories = directory.list();
+
+		if(bloomDirectories != null) {
+			for(int i = 0; i < bloomDirectories.length; i++) {
+				localBlooms.add(new Bloom(bloomDirectories[i], new File(directory, bloomDirectories[i])));
+			}
+		}
+		
+		return localBlooms;
+	}
+	
+	@SuppressWarnings("deprecation")
+	public static BitmapDrawable flip(BitmapDrawable d) {
+		Matrix m = new Matrix();
+		m.preScale(-1, 1);
+		Bitmap src = d.getBitmap();
+		Bitmap dst = Bitmap.createBitmap(src, 0, 0, src.getWidth(),
+				src.getHeight(), m, false);
+		dst.setDensity(DisplayMetrics.DENSITY_DEFAULT);
+		return new BitmapDrawable(dst);
+	}
+	
+	public static Bitmap rotate(Bitmap bitmap, int degree) {
+		int w = bitmap.getWidth();
+		int h = bitmap.getHeight();
+
+		Matrix mtx = new Matrix();
+		mtx.postRotate(degree);
+
+		return Bitmap.createBitmap(bitmap, 0, 0, w, h, mtx, true);
+	}
+	
+	public static File createDirectory(String name) {
+		File mediaStorageDir = new File(
+				Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+				name);
+		if (!mediaStorageDir.exists()) {
+			if (!mediaStorageDir.mkdirs()) {
+				Log.d(TAG, "failed to create directory");
+				return null;
+			}
+		}
+		
+		return mediaStorageDir;
+	}
+
+	public static File getOutputMediaFile(File directory, int type) {
+		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+				.format(new Date());
+		File mediaFile;
+		if (type == MEDIA_TYPE_IMAGE) {
+			mediaFile = new File(directory.getPath() + File.separator
+					+ "IMG_" + timeStamp + ".jpg");
+		} else {
+			return null;
+		}
+
+		return mediaFile;
+	}
+	
+	public static String getEditTextString(EditText et) {
+		return et.getText().toString().trim();
+	}
+
+
+	public static AnimationDrawable resampleAnimation(AnimationDrawable input,	int frameDuration) {
+		AnimationDrawable output = new AnimationDrawable();
+
+		for (int i = 0; i < input.getNumberOfFrames(); i++) {
+			output.addFrame(input.getFrame(i), frameDuration);
+		}
+
+		output.setOneShot(input.isOneShot());
+		return output;
+	}
+}
